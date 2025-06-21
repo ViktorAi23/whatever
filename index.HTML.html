@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Science AI 🌿</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: linear-gradient(135deg, #a8e063, #56ab2f);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      color: #fff;
+      animation: backgroundShift 10s ease-in-out infinite alternate;
+    }
+
+    @keyframes backgroundShift {
+      0% {
+        background: linear-gradient(135deg, #a8e063, #56ab2f);
+      }
+      100% {
+        background: linear-gradient(135deg, #56ab2f, #a8e063);
+      }
+    }
+
+    .container {
+      background: #ffffffee;
+      padding: 2.5rem;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      width: 95%;
+      max-width: 900px;
+      text-align: center;
+      color: #222;
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      color: #2e7d32;
+    }
+
+    .instructions {
+      background: #eaffec;
+      border-left: 5px solid #44aa66;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      font-size: 1.1rem;
+      text-align: left;
+      border-radius: 10px;
+    }
+
+    input {
+      width: 80%;
+      padding: 1rem;
+      font-size: 1.2rem;
+      border-radius: 10px;
+      border: 1px solid #aaa;
+      margin-bottom: 1rem;
+    }
+
+    button {
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      background: #388e3c;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background: #2e7d32;
+    }
+
+    #result {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #f6fff4;
+      border: 1px solid #b0ddb5;
+      border-radius: 10px;
+      font-size: 1.2rem;
+      color: #222;
+      text-align: left;
+    }
+
+    .highlight {
+      background: yellow;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>🌿 Smart Science AI</h1>
+
+    <div class="instructions">
+      <strong>How to Ask:</strong>
+      <ul>
+        <li>✅ Stick to science, animals, history, sports, nature.</li>
+        <li>✅ Example: "How do salamanders regrow legs?"</li>
+        <li>❌ Avoid fake or joke questions.</li>
+      </ul>
+    </div>
+
+    <input type="text" id="question" placeholder="Ask something scientific..." />
+    <br>
+    <button onclick="search()">Search</button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const text = `
+      merican military armor is better designed than ever before to protect soldiers...
+      [Truncated for space: Keep your full source text here]
+    `;
+
+    const verbGroups = {
+      "how": ["can", "regenerate", "regrow", "grow", "able", "regeneration"],
+      "can": ["can", "could", "able", "capable"],
+      "does": ["does", "is", "can", "could"]
+    };
+
+    function search() {
+      const q = document.getElementById("question").value.toLowerCase();
+      const result = document.getElementById("result");
+      result.innerHTML = '';
+
+      if (!q || q.length < 3) {
+        result.innerText = "Please ask a valid question.";
+        return;
+      }
+
+      const patterns = extractPatterns(q);
+      const mainWord = extractMainSubject(q);
+      const verbIntent = detectVerbIntent(q);
+
+      const sentences = text.split(/[.!?]\s+/);
+      let matches = [];
+
+      for (let i = 0; i < sentences.length; i++) {
+        const sentence = sentences[i].trim();
+        const lower = sentence.toLowerCase();
+
+        const verbMatch = verbGroups[verbIntent] || [];
+        const verbFound = verbMatch.some(v => lower.includes(v));
+        const subjectFound = lower.includes(mainWord);
+
+        if (subjectFound && verbFound) {
+          let matchScore = 0;
+          for (let pat of patterns) {
+            if (lower.includes(pat)) matchScore++;
+          }
+
+          const next = sentences[i + 1] || "";
+          const fullAnswer = sentence + ". " + (next.includes(mainWord) || next.includes("this") ? next : "");
+
+          matches.push({
+            sentence: fullAnswer,
+            score: matchScore
+          });
+        }
+      }
+
+      matches.sort((a, b) => b.score - a.score);
+
+      if (matches.length === 0) {
+        result.innerHTML = "<p>No relevant answer found.</p>";
+      } else {
+        result.innerHTML = "<strong>Answer:</strong><ul>" +
+          matches.slice(0, 3).map(m => `<li>${highlight(m.sentence, patterns)}</li>`).join('') +
+          "</ul>";
+      }
+    }
+
+    function extractPatterns(q) {
+      const stopWords = ["what", "when", "where", "why", "who", "how", "does", "is", "are", "did", "do", "was", "were", "can", "could", "should", "the", "a", "an", "to", "in", "on", "at", "for", "of", "and", "with", "after", "they", "get", "by", "his", "their", "again"];
+      return q.split(/\s+/).filter(w => !stopWords.includes(w));
+    }
+
+    function extractMainSubject(q) {
+      const knownSubjects = ["salamander", "gecko", "scorpion", "einstein", "russell", "frogs"];
+      for (let w of q.split(/\s+/)) {
+        if (knownSubjects.includes(w)) return w;
+      }
+      return q.split(/\s+/).find(w => w.length > 4) || "unknown";
+    }
+
+    function detectVerbIntent(q) {
+      if (q.startsWith("how")) return "how";
+      if (q.startsWith("can")) return "can";
+      if (q.startsWith("does") || q.startsWith("do")) return "does";
+      return "how";
+    }
+
+    function highlight(text, keywords) {
+      let result = text;
+      keywords.forEach(k => {
+        const re = new RegExp(`(${k})`, "gi");
+        result = result.replace(re, '<span class="highlight">$1</span>');
+      });
+      return result;
+    }
+  </script>
+
+</body>
+</html>
